@@ -10,10 +10,10 @@ import configparser
 # Load configuration
 config = configparser.ConfigParser()
 config.read('app.config')
-API_KEY = config.get('API', 'API_KEY_ARYAN')
-ADD_DATA_URL = config.get('URL', 'ADD_DATA_URL')
+API_KEY = config.get('API', 'API_KEY_JAVADEV')
+ADD_DATA_URL = config.get('URL', 'ADD_CLUB_URL')
 
-# Define the URL and API key of [ from api.keys ]
+# Define the URL and API key from config
 url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={API_KEY}"
 
 # Define the headers
@@ -21,10 +21,10 @@ headers = {
     "Content-Type": "application/json",
 }
 
-logging.basicConfig(filename='running_clubs.log', level=logging.INFO, 
+logging.basicConfig(filename='running_shops.log', level=logging.INFO, 
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
-dir_name = "club_data_json"
+dir_name = "shop_data_json"
 os.makedirs(dir_name, exist_ok=True)
 
 # Specify the maximum number of API calls per run
@@ -41,11 +41,11 @@ with open('cities_500.csv', newline='') as csvfile:
 api_calls = 0
 
 # Function to make API request and save response for a city
-def fetch_running_clubs(city, api_calls):
+def fetch_running_shops(city, api_calls):
     max_retries = 2
     attempt = 0
     
-    file_name = os.path.join(dir_name, f"{city.replace(' ', '_').lower()}_running_clubs.json")
+    file_name = os.path.join(dir_name, f"{city.replace(' ', '_').lower()}_running_shops.json")
     
     # Check if the file already exists
     if os.path.exists(file_name):
@@ -64,7 +64,7 @@ def fetch_running_clubs(city, api_calls):
                     {
                         "parts": [
                             {
-                                "text": f"Give me exhaustive list of running clubs in {city} in json format only. "
+                                "text": f"Give me exhaustive list of running shops in {city} in json format only. "
                                         f"name, link, social link, address, town, state, contactAddressStreet1, "
                                         f"contactAddressStreet2, contactAddressZip, insta, twitter, meetup link. put null if not found"
                             }
@@ -83,18 +83,18 @@ def fetch_running_clubs(city, api_calls):
                 content = response_json["candidates"][0]["content"]["parts"][0]["text"]
 
                 # Parse the extracted content as JSON
-                running_clubs = json.loads(content.strip("```json\n").strip("\n```"))
+                running_shops = json.loads(content.strip("```json\n").strip("\n```"))
 
                 # Write the parsed JSON to a file
                 with open(file_name, "w") as json_file:
-                    json.dump(running_clubs, json_file, indent=4)
+                    json.dump(running_shops, json_file, indent=4)
                 
-                log_message = f"Running clubs data for {city} has been saved to {file_name}"
+                log_message = f"Running shops data for {city} has been saved to {file_name}"
                 print(log_message)
                 logging.info(log_message)
                 
-                # Send the running clubs data to the specified API
-                send_running_clubs_to_api(running_clubs)
+                # Send the running shops data to the specified API
+                send_running_shops_to_api(running_shops)
                 
                 return api_calls, True  # Return incremented api_calls count and True to indicate API call was successful
             else:
@@ -118,26 +118,26 @@ def fetch_running_clubs(city, api_calls):
 
     return api_calls, False
 
-def send_running_clubs_to_api(running_clubs):
-    for club in running_clubs:
-        name = club.get('name', '')
-        website = club.get('link', '')
-        address = club.get('address', '')
-        city = club.get('town', '')
-        state = club.get('state', '')
-        fb = club.get('social link', '')
-        contactAddressStreet1 = club.get('contactAddressStreet1', '')
-        contactAddressStreet2 = club.get('contactAddressStreet2', '')
-        contactAddressZip = club.get('contactAddressZip', '')
-        insta = club.get('insta', '')
-        twitter = club.get('twitter', '')
-        meetup = club.get('meetup link', '')
+def send_running_shops_to_api(running_shops):
+    for shop in running_shops:
+        name = shop.get('name', '')
+        website = shop.get('link', '')
+        address = shop.get('address', '')
+        city = shop.get('town', '')
+        state = shop.get('state', '')
+        fb = shop.get('social link', '')
+        contactAddressStreet1 = shop.get('contactAddressStreet1', '')
+        contactAddressStreet2 = shop.get('contactAddressStreet2', '')
+        contactAddressZip = shop.get('contactAddressZip', '')
+        insta = shop.get('insta', '')
+        twitter = shop.get('twitter', '')
+        meetup = shop.get('meetup link', '')
         
         command = [
             'curl', '--location', f'{ADD_DATA_URL}',
             '--header', 'accept: */*',
             '--header', 'accept-language: en-US,en;q=0.9',
-            '--form', f'isRunningClub=true',
+            '--form', f'isRunningClub=false',
             '--form', f'isRunningCoach=false',
             '--form', f'name={name}',
             '--form', f'website={website}',
@@ -150,7 +150,7 @@ def send_running_clubs_to_api(running_clubs):
             '--form', f'insta={insta}',
             '--form', f'twitter={twitter}',
             '--form', f'meetup={meetup}',
-            '--form', f'isRunningStore=false',
+            '--form', f'isRunningStore=true',
             '--form', f'runs=[]',
             '--form', f'memberships=[]'
         ]
@@ -167,7 +167,7 @@ def send_running_clubs_to_api(running_clubs):
 
 start_time = time.time()
 
-# Loop through the cities and fetch running clubs data for each
+# Loop through the cities and fetch running shops data for each
 for city in cities:
     if api_calls >= max_api_calls:
         log_message = f"Maximum API calls limit of {max_api_calls} reached. Stopping for now."
@@ -175,7 +175,7 @@ for city in cities:
         logging.info(log_message)
         break
     
-    api_calls, api_call_made = fetch_running_clubs(city, api_calls)
+    api_calls, api_call_made = fetch_running_shops(city, api_calls)
     
     if api_call_made:
         # Increment the counter only if the API call was made
