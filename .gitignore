@@ -1,5 +1,5 @@
 *.json
-*.conf
+*.config
 *.log
 *.xlsx
 *.keys
